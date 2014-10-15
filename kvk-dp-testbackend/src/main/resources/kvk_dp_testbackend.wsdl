@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions name="Calculator"
+    xmlns="http://schemas.xmlsoap.org/wsdl/"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    targetNamespace="http://dp.kvk.backendtest.nl"
+    xmlns:tns="http://dp.kvk.backendtest.nl">
+ 
+    <wsdl:types>
+        <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                    xmlns="http://dp.kvk.backendtest.nl"
+                    targetNamespace="http://dp.kvk.backendtest.nl"
+                    attributeFormDefault="unqualified" elementFormDefault="qualified">
+ 
+             <xsd:element name="optellen">
+                <xsd:complexType>
+                   <xsd:sequence>
+                      <xsd:element name="waarde1" type="xsd:int"/>
+                      <xsd:element name="waarde2" type="xsd:int"/>
+                   </xsd:sequence>
+                </xsd:complexType>
+             </xsd:element>
+
+
+             <xsd:element name="aftrekken">
+                <xsd:complexType>
+                   <xsd:sequence>
+                      <xsd:element name="waarde1" type="xsd:int"/>
+                      <xsd:element name="waarde2" type="xsd:int"/>
+                   </xsd:sequence>
+                </xsd:complexType>
+             </xsd:element>
+
+ 
+             <xsd:element name="optellenResponse">
+                <xsd:complexType>
+                   <xsd:sequence>
+                      <xsd:element name="return" type="xsd:string"/>
+                   </xsd:sequence>
+                </xsd:complexType>
+             </xsd:element>
+             
+             <xsd:element name="aftrekkenResponse">
+                <xsd:complexType>
+                   <xsd:sequence>
+                      <xsd:element name="return" type="xsd:string"/>
+                   </xsd:sequence>
+                </xsd:complexType>
+             </xsd:element>
+             
+             
+        </xsd:schema>
+    </wsdl:types>
+   
+    <wsdl:message name="optellen">
+       <wsdl:part name="optellen" element="tns:optellen"/>
+    </wsdl:message>
+
+    <wsdl:message name="aftrekken">
+       <wsdl:part name="aftrekken" element="tns:aftrekken"/>
+    </wsdl:message>
+
+ 
+    <wsdl:message name="optellenResponse">
+       <wsdl:part name="optellenResponse" element="tns:optellenResponse"/>
+    </wsdl:message>
+
+    <wsdl:message name="aftrekkenResponse">
+       <wsdl:part name="aftrekkenResponse" element="tns:aftrekkenResponse"/>
+    </wsdl:message>
+
+ 
+    <wsdl:portType name="CalculatorPortType">
+       <wsdl:operation name="optellen">
+         <wsdl:input name="optellen" message="tns:optellen"/>
+         <wsdl:output name="optellenResponse" message="tns:optellenResponse"/>
+       </wsdl:operation>
+       <wsdl:operation name="aftrekken">
+         <wsdl:input name="aftrekken" message="aftrekken"/>
+         <wsdl:output name="aftrekkenResponse" message="tns:aftrekkenResponse"/>
+       </wsdl:operation>
+       
+    </wsdl:portType>
+         
+    <wsdl:binding name="CalculatorSoapBinding" type="tns:CalculatorPortType">
+        <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+         
+        <wsdl:operation name="optellen">
+            <soap:operation soapAction="optellen" style="document"/>
+            <wsdl:input name="optellen">
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="optellenResponse">
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="aftrekken">
+            <soap:operation soapAction="aftrekken" style="document"/>
+            <wsdl:input name="aftrekken">
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="aftrekkenResponse">
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+                 
+    </wsdl:binding>
+   
+    <wsdl:service name="Calculator">
+        <wsdl:port name="CalculatorPort" binding="tns:CalculatorSoapBinding">
+            <soap:address location="http://localhost:8080/jaxws-calculator/calculator"/>
+        </wsdl:port>
+    </wsdl:service>
+       
+</wsdl:definitions>

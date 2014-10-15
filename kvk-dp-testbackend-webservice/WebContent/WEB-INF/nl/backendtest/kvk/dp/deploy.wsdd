@@ -1,0 +1,26 @@
+<!-- Use this file to deploy some handlers/chains and services      -->
+<!-- Two ways to do this:                                           -->
+<!--   java org.apache.axis.client.AdminClient deploy.wsdd          -->
+<!--      after the axis server is running                          -->
+<!-- or                                                             -->
+<!--   java org.apache.axis.utils.Admin client|server deploy.wsdd   -->
+<!--      from the same directory that the Axis engine runs         -->
+
+<deployment
+    xmlns="http://xml.apache.org/axis/wsdd/"
+    xmlns:java="http://xml.apache.org/axis/wsdd/providers/java">
+
+  <!-- Services from Calculator WSDL service -->
+
+  <service name="CalculatorPort" provider="java:RPC" style="wrapped" use="literal">
+      <parameter name="wsdlTargetNamespace" value="http://dp.kvk.backendtest.nl"/>
+      <parameter name="wsdlServiceElement" value="Calculator"/>
+      <parameter name="schemaQualified" value="http://dp.kvk.backendtest.nl"/>
+      <parameter name="wsdlServicePort" value="CalculatorPort"/>
+      <parameter name="className" value="nl.backendtest.kvk.dp.CalculatorSoapBindingSkeleton"/>
+      <parameter name="wsdlPortType" value="CalculatorPortType"/>
+      <parameter name="typeMappingVersion" value="1.2"/>
+      <parameter name="allowedMethods" value="*"/>
+
+  </service>
+</deployment>

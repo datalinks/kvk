@@ -1,0 +1,9 @@
+eclipse.preferences.version=1
+encoding//src/nl/backendtest/kvk/dp/Calculator.java=UTF-8
+encoding//src/nl/backendtest/kvk/dp/CalculatorLocator.java=UTF-8
+encoding//src/nl/backendtest/kvk/dp/CalculatorPortType.java=UTF-8
+encoding//src/nl/backendtest/kvk/dp/CalculatorSoapBindingImpl.java=UTF-8
+encoding//src/nl/backendtest/kvk/dp/CalculatorSoapBindingSkeleton.java=UTF-8
+encoding//src/nl/backendtest/kvk/dp/CalculatorSoapBindingStub.java=UTF-8
+encoding//src/nl/backendtest/kvk/dp/Rekenen.java=UTF-8
+encoding//src/nl/backendtest/kvk/dp/RekenenResponse.java=UTF-8

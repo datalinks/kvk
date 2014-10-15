@@ -1,0 +1,28 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:dp="http://dp.kvk.backendtest.nl">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <dp:optellen>
+         <dp:waarde1>24</dp:waarde1>
+         <dp:waarde2>9</dp:waarde2>
+      </dp:optellen>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ns="http://schemas.kvk.nl/schemas/ws/helloworld/2010/01" xmlns:wsa="http://www.w3.org/2005/08/addressing" xmlns:kvk="http://schemas.kvk.nl/schemas/gen/integratielaag/2013/01"> 
+        <S:Header> 
+                <wsa:Action>http://ws.kvk.nl/vastleggenDocumentenImaging</wsa:Action> 
+                <wsa:MessageID>uuid://ce47e3c7-6ba1-4b17-8bee-254753e21c3c</wsa:MessageID> 
+                <wsa:To>http://ws.kvk.nl/OND-Document/2013/01</wsa:To> 
+                <wsa:From> 
+                        <wsa:Address>http://www.kvk.nl/MyWorld</wsa:Address> 
+                        <wsa:ReferenceParameters> 
+                                <kvk:omgeving>DEV</kvk:omgeving> 
+                        </wsa:ReferenceParameters> 
+                </wsa:From> 
+        </S:Header> 
+        <S:Body> 
+                <ns:print> 
+                        <print>testing</print> 
+                </ns:print> 
+        </S:Body> 
+</S:Envelope> 

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"  xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:element name="optellen">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="waarde1" type="xsd:int"/>
+				<xsd:element name="waarde2" type="xsd:int"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="optellenResponse">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="return" type="xsd:string"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+</xs:schema>

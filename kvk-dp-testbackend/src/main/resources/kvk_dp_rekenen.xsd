@@ -1,0 +1,24 @@
+<?xml version="1.0" ?>
+        <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                    xmlns="http://dp.kvk.backendtest.nl"
+                    targetNamespace="http://dp.kvk.backendtest.nl"
+                    attributeFormDefault="unqualified" elementFormDefault="qualified">
+ 
+             <xsd:element name="optellen">
+                <xsd:complexType>
+                   <xsd:sequence>
+                      <xsd:element name="waarde1" type="xsd:int"/>
+                      <xsd:element name="waarde2" type="xsd:int"/>
+                   </xsd:sequence>
+                </xsd:complexType>
+             </xsd:element>
+ 
+             <xsd:element name="optellenResponse">
+                <xsd:complexType>
+                   <xsd:sequence>
+                      <xsd:element name="return" type="xsd:string"/>
+                   </xsd:sequence>
+                </xsd:complexType>
+             </xsd:element>
+        </xsd:schema>
+</xsd:schema>

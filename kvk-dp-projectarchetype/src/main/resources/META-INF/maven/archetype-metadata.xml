@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<archetype-descriptor name="ilf">
+  <fileSets>
+    <fileSet filtered="true" encoding="UTF-8"><directory>src/resources/properties/component/technical-aanlever</directory></fileSet>
+    <fileSet filtered="true" encoding="UTF-8"><directory>src/resources/properties/component/functional-aanlever</directory></fileSet>
+    <fileSet filtered="true" encoding="UTF-8"><directory>src/resources/properties/component/route</directory></fileSet>
+    <fileSet filtered="true" encoding="UTF-8"><directory>src/resources/properties/component/distribueer</directory></fileSet>
+    <fileSet filtered="true" encoding="UTF-8"><directory>src/resources/properties/component/aflever</directory></fileSet>
+    <fileSet filtered="true" encoding="UTF-8"><directory>src/resources/properties/component/transform</directory></fileSet>
+
+    <fileSet filtered="true" encoding="UTF-8"><directory>src/resources/properties/flow/functional_to_technical</directory></fileSet>
+    <fileSet filtered="true" encoding="UTF-8"><directory>src/resources/properties/flow/technical_to_aflever</directory></fileSet>
+
+ 
+    <fileSet filtered="true" encoding="UTF-8"><directory>src/resources/export</directory></fileSet>
+    <fileSet filtered="no" encoding="UTF-8"><directory>src/resources/scripts</directory></fileSet>
+    <fileSet filtered="no" encoding="UTF-8"><directory>src/resources/xml</directory></fileSet>
+
+
+    <fileSet filtered="true" packaged="true">
+      <directory>src/main/java</directory>
+      <includes>
+        <include>**/*.java</include>
+      </includes>
+    </fileSet>
+    <fileSet filtered="true" packaged="true">
+      <directory>src/test/java</directory>
+      <includes>
+        <include>**/*.java</include>
+      </includes>
+    </fileSet>
+
+  </fileSets>
+</archetype-descriptor>

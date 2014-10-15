@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions 	xmlns="http://schemas.xmlsoap.org/wsdl/" 
+							xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" 
+							xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" 
+							xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+							xmlns:tns="http://dp.kvk.backendtest.nl" 
+							name="Calculator" 
+							targetNamespace="http://dp.kvk.backendtest.nl">
+	<wsdl:types>
+		<xsd:schema targetNamespace="http://dp.kvk.backendtest.nl" xmlns="http://dp.kvk.backendtest.nl" >
+			<xsd:include schemaLocation="calculator_types.xsd"/>
+		</xsd:schema>
+	</wsdl:types>
+	<wsdl:message name="optellen">
+		<wsdl:part name="optellen" element="tns:optellen"/>
+	</wsdl:message>
+	<wsdl:message name="optellenResponse">
+		<wsdl:part name="optellenResponse" element="tns:optellenResponse"/>
+	</wsdl:message>
+	<wsdl:portType name="CalculatorPortType">
+		<wsdl:operation name="optellen">
+			<wsdl:input name="optellen" message="tns:optellen"/>
+			<wsdl:output name="optellenResponse" message="tns:optellenResponse"/>
+		</wsdl:operation>
+	</wsdl:portType>
+	<wsdl:binding name="CalculatorSoapBinding" type="tns:CalculatorPortType">
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+		<wsdl:operation name="optellen">
+			<soap:operation soapAction="optellen" style="document"/>
+			<wsdl:input name="optellen">
+				<soap:body use="literal"/>
+			</wsdl:input>
+			<wsdl:output name="optellenResponse">
+				<soap:body use="literal"/>
+			</wsdl:output>
+		</wsdl:operation>
+	</wsdl:binding>
+	<wsdl:service name="Calculator">
+		<wsdl:port name="CalculatorPort" binding="tns:CalculatorSoapBinding">
+			<soap:address location="http://localhost:8080/jaxws-calculator/calculator"/>
+		</wsdl:port>
+	</wsdl:service>
+</wsdl:definitions>

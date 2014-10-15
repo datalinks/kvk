@@ -1,0 +1,10 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:dp="http://dp.kvk.backendtest.nl">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <dp:optellen>
+         <dp:waarde1>24</dp:waarde1>
+         <dp:waarde2>9</dp:waarde2>
+      </dp:optellen>
+   </soapenv:Body>
+</soapenv:Envelope>
+
