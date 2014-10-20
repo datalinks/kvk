@@ -1,0 +1,22 @@
+Manifest-Version: 1.0
+Built-By: datapower-team
+Main-Class: com.kvk.dp.errorhandlingtool.DpErrorHandlingTool
+Class-Path: : /opt/kvk/lib/mqm/com.ibm.mq.commonservices.jar 
+ /opt/kvk/lib/mqm/com.ibm.mq.jar 
+ /opt/kvk/lib/mqm/com.ibm.mq.jmqi.jar 
+ /opt/kvk/lib/db2/db2jcc4.jar 
+ /opt/kvk/lib/db2/db2jcc_license_cu.jar 
+ /opt/kvk/lib/java/commons-codec-1.4.jar 
+ /opt/kvk/lib/java/commons-logging-1.1.1.jar 
+ /opt/kvk/lib/java/httpclient-4.1.2.jar 
+ /opt/kvk/lib/java/httpcore-4.1.2.jar 
+ /opt/kvk/lib/java/jaxb-api-2.2.5.jar 
+ /opt/kvk/lib/java/jaxb-impl-2.2.5.jar 
+ /opt/kvk/lib/java/junit-4.7.jar 
+ /opt/kvk/lib/java/log4j-1.2.16.jar 
+ /opt/kvk/lib/java/xmlbeans-1.0.jar 
+ /opt/kvk/lib/java/xmlunit-1.3.jar
+Build-Jdk: 1.7.0_45
+Created-By: Apache Maven 3.1.1
+Archiver-Version: Plexus Archiver
+

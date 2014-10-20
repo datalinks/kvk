@@ -1,0 +1,40 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+	xmlns:wsa="http://www.w3.org/2005/08/addressing" xmlns:kvk="http://www.kvk.nl/dp"
+	xmlns:kvk-dp-meta="http://www.kvk.nl/dp/meta">
+	<soapenv:Header>
+		<wsa:To>http://ws.kvk.nl/ECM-Documentumservice</wsa:To>
+		<wsa:Action>http://ws.kvk.nl/TestCalcRR1_transformed</wsa:Action>
+		<wsa:From xmlns:ns="http://schemas.kvk.nl/schemas/ws/helloworld/2010/01"
+			xmlns:dp="http://dp.kvk.backendtest.nl" xmlns:kvk="http://schemas.kvk.nl/schemas/gen/integratielaag/2013/01">
+			<wsa:Address>http://www.kvk.nl/MyWorld</wsa:Address>
+			<wsa:ReferenceParameters>
+				<kvk:omgeving>DEV</kvk:omgeving>
+			</wsa:ReferenceParameters>
+		</wsa:From>
+		<kvk-dp-meta:endpoints>
+			<kvk-dp-meta:endpoint>
+				<kvk-dp-meta:aflever-endpoint>ilf-fac-testCalcOptellen-a1
+				</kvk-dp-meta:aflever-endpoint>
+				<kvk-dp-meta:transform-request>testCalc_optellenToVermenigvuldigen.xsl
+				</kvk-dp-meta:transform-request>
+			</kvk-dp-meta:endpoint>
+		</kvk-dp-meta:endpoints>
+		<kvk-dp-meta:domain-transformation-endpoint>http://dpd-snb01-02.k94.kvk.nl:6250
+		</kvk-dp-meta:domain-transformation-endpoint>
+		<kvk-dp-meta:domain-messagepersist-endpoint>dpmq://sbox_mq_grp/?RequestQueue=CHRIS.MI.TEST.LOG01
+		</kvk-dp-meta:domain-messagepersist-endpoint>
+		<kvk-dp-meta:slm-policy-name />
+		<kvk-dp-meta:flow-logging>true</kvk-dp-meta:flow-logging>
+		<kvk-dp-meta:flow-logging-level>debug</kvk-dp-meta:flow-logging-level>
+		<kvk-dp-meta:retentionID>8</kvk-dp-meta:retentionID>
+		<wsa:MessageID>chris-001</wsa:MessageID>
+		<wsa:MessageID soapenv:actor="http://ws.kvk.nl/IL">uuid://e3b5bd4d-dece-4a81-9344-1464e187d081</wsa:MessageID>
+	</soapenv:Header>
+	<soapenv:Body xmlns:ns="http://schemas.kvk.nl/schemas/ws/helloworld/2010/01"
+		xmlns:dp="http://dp.kvk.backendtest.nl" xmlns:kvk="http://schemas.kvk.nl/schemas/gen/integratielaag/2013/01">
+		<dp:vermenigvuldigen>
+			<dp:waarde1>87987</dp:waarde1>
+			<dp:waarde2>232</dp:waarde2>
+		</dp:vermenigvuldigen>
+	</soapenv:Body>
+</soapenv:Envelope>

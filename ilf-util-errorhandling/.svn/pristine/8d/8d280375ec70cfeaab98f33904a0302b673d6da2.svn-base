@@ -1,0 +1,97 @@
+package com.kvk.dp.errorhandlingtool;
+
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import org.apache.commons.codec.binary.Base64;
+
+public class SoapUtil {
+
+	private static MessageDigest SHA1;
+	
+	static {
+		try {
+			SHA1 = MessageDigest.getInstance("SHA-1");
+		} catch(NoSuchAlgorithmException nae) {
+			throw new RuntimeException(nae);
+		}
+	}
+	
+	
+	public static String getCurrentDate(){
+		String lFormatTemplate = "yyyy-MM-dd'T'hh:mm:ss'Z'";
+		DateFormat lDateFormat = new SimpleDateFormat(lFormatTemplate);
+		String lDate = lDateFormat.format(new Date());
+		return lDate;
+	}
+	
+
+	private static String digestPassword(String nonceParam, String timestamp, String password) throws UnsupportedEncodingException{
+		String digestedPassword=null;
+		
+		byte[] decodedNonce = Base64.decodeBase64(nonceParam.getBytes("UTF-8"));
+		
+		// Maak een passwordDigest op basis van een Array
+		// Dit is nodig omdat de nonce geen string hoeft te zijn maar elke willekeurige byte waarde kan bevatten. 
+		// Een string concat zou de berekening corrupt kunnen maken. 
+		byte[] timestampbyte = timestamp.getBytes("UTF-8");
+
+		byte[] passwordbyte = password.getBytes("UTF-8");
+		
+		// Ik gebruik voor de byte array concat een ByteBuffer, dit maakt het een stuk makkelijker aangezien een opeenvolging van 
+		// de aanroep van .put een concat tot gevolg heeft. 
+		java.nio.ByteBuffer bb=  java.nio.ByteBuffer.allocate(decodedNonce.length + timestampbyte.length + passwordbyte.length);
+		bb.put(decodedNonce);
+		bb.put(timestampbyte);
+		bb.put(passwordbyte);
+
+		//reset is noodzakelijk omdat hij in dit programma herhaaldelijk aangeroepen wordt.
+		byte[] beforeEncrytionByte = bb.array();
+		SHA1.reset();    
+
+		//Zet de byte array met de concat van de nonce, timestamp en password in SHA1
+		SHA1.update(beforeEncrytionByte);   
+		//Digest de byte array
+		byte[] encryptedRaw1 = SHA1.digest();
+		//base64 encode de digested byte array, dit is je digested password, nadat je er weer een string van hebt gemaakt.
+		byte[] encoded1 = Base64.encodeBase64(encryptedRaw1);     
+		try {
+			//Maak een string van het digested password byte array
+			digestedPassword = new String(encoded1, "UTF-8");     
+		} catch (UnsupportedEncodingException uee) {
+			throw new RuntimeException(uee);
+		}
+		return digestedPassword;
+	}
+	
+	
+	public static String generateSoapSecurityHeader() throws UnsupportedEncodingException{
+		StringBuffer result = new StringBuffer();
+		String username = "smoketest";
+		String password = "wwsmoketest";
+		
+		//	Current Date
+		String date = getCurrentDate();
+		//	Nonce
+		String nonce = "kvk_dp_testutil_nonce_"+date+"_nr_"+Math.random();
+		byte[] encodedNonceBytes = Base64.encodeBase64(nonce.getBytes("UTF-8"));
+		//	Password
+		String passwordDigest = digestPassword(new String(encodedNonceBytes, "UTF-8"), date, password);
+		
+		result.append("	  <wsse:Security>");
+		result.append("	     <wsse:UsernameToken xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\" wsu:Id=\"SecurityToken-6138db82-5a4c-4bf7-915f-af7a10d9ae96\">");
+		result.append("		    <wsse:Username>"+username+"</wsse:Username>");
+		result.append("		    <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest\">"+passwordDigest+"</wsse:Password>");
+		result.append("		    <wsse:Nonce EncodingType=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary\">"+new String(encodedNonceBytes, "UTF-8")+"</wsse:Nonce>");
+		result.append("		    <wsu:Created>"+date+"</wsu:Created>");
+		result.append("	     </wsse:UsernameToken>");
+		result.append("	  </wsse:Security>");
+		
+		return result.toString();
+		
+	}
+}

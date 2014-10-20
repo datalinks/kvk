@@ -1,0 +1,12 @@
+# This file should be in /opt/kvk/logpersisttool/properties
+db_user=ZGJ4Y3Z1Cg==
+db_pwd=enc0cnQzcDNuCg==
+db_url=amRiYzpkYjI6Ly9SUzk0QVNPRi5rOTQua3ZrLm5sOjYwNTA0L2RieGN2dQo=
+mq_queuename=RFAuTUVTU0FHRVBFUlNJU1QuTFEwMQo=
+mq_errorRetryQueuename=RFAuTUVTU0FHRVBFUlNJU1RfUkVUUlkuTFEwMQo=
+mq_errorqueuename=RFAuTUVTU0FHRVBFUlNJU1RfRVJST1IuTFEwMQo=
+mq_hostname=cnM5NGFzbzcuazk0Lmt2ay5ubAo=
+mq_channel=REFUQVBPV0VSLlNWUkNPTk4K
+mq_user=ZGJ4Y3Z1Cg==
+mq_port=MTA0MjUK
+mq_manager=TVFNTUkwNgo=

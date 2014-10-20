@@ -1,0 +1,67 @@
+package com.kvk.dp.logpersisttool;
+
+import static org.junit.Assert.assertEquals;
+
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamReader;
+
+import org.junit.Test;
+
+import com.kvk.dp.logpersisttool.jaxb.Header;
+
+public class TestXmlMessages {
+	
+	String xmlFileName  		= "src/main/resources/xml/inputMessage.xml";
+
+	
+	private String buildInputStringFromXmlFile(String xmlFileName) throws IOException {
+		StringBuilder result = new StringBuilder();
+		BufferedReader input = new BufferedReader(new FileReader(xmlFileName));
+		String line = null;
+		while ((line = input.readLine()) != null) {
+			result.append(line);
+			result.append(System.getProperty("line.separator"));
+		}
+		input.close();
+		return result.toString();
+	}
+
+	
+	@Test
+	public void testXmlMessageCreation() throws Exception{
+			String xmlMessage = buildInputStringFromXmlFile(xmlFileName);
+			String expectedRetentionId = "8";
+			String expectedMessageId = "uuid://e3b5bd4d-dece-4a81-9344-1464e187d081";
+			String expectedSoapNamespace = "http://schemas.xmlsoap.org/soap/envelope/";
+			String expectedWsaNamespace = "http://www.w3.org/2005/08/addressing";
+			String expectedDpMetaNamespace = "http://www.kvk.nl/dp/meta";
+			
+			XMLInputFactory xif = XMLInputFactory.newFactory();
+			InputStream xmlInputStream = new ByteArrayInputStream(xmlMessage.getBytes("UTF-8"));
+			XMLStreamReader xsr = xif.createXMLStreamReader(xmlInputStream);
+	        xsr.nextTag(); // Advance to Envelope tag
+	        xsr.nextTag(); // Advance to Header tag
+	        
+	        JAXBContext jc = JAXBContext.newInstance(Header.class);
+	        Unmarshaller unmarshaller = jc.createUnmarshaller();
+	        JAXBElement<Header> je = unmarshaller.unmarshal(xsr, Header.class);
+	        
+	        assertEquals("namespace soapenv tag", expectedSoapNamespace,xsr.getNamespaceContext().getNamespaceURI("soapenv").trim());
+	        assertEquals("namespace wsa tag", expectedWsaNamespace,xsr.getNamespaceContext().getNamespaceURI("wsa").trim());
+	        assertEquals("namespace kvk-dp-meta tag", expectedDpMetaNamespace,xsr.getNamespaceContext().getNamespaceURI("kvk-dp-meta").trim());
+
+	        assertEquals("RetentionID check ",expectedRetentionId,je.getValue().getRetentionID().trim());
+			assertEquals("messageID check ",expectedMessageId,je.getValue().getMessageID().trim());
+
+
+	}
+}

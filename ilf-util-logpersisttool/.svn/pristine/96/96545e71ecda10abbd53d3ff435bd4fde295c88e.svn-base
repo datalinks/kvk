@@ -1,0 +1,35 @@
+package com.kvk.dp.logpersisttool;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.StringUtils;
+import org.apache.log4j.Logger;
+
+public class DpLogPersisterUtil {
+	
+	static Logger log = Logger.getLogger(DpLogPersisterUtil.class.getName());
+
+	static Properties 	prop 	= new Properties();
+	static InputStream 	input 	= null;
+	
+	static{
+		String propFileName = "/opt/kvk/logpersisttool/properties/connection.properties";
+		try {
+			input = new FileInputStream(propFileName);
+			prop.load(input);
+		} catch (IOException e) {
+			log.error("IOException loading propfile: "+propFileName);
+		}
+	}
+
+	
+	public static String getProperty(String propName){
+		String property = prop.getProperty(propName);
+		return StringUtils.newStringUtf8(Base64.decodeBase64(property)).replaceAll("\n", "");
+	}
+	
+}

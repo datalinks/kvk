@@ -1,0 +1,4 @@
+CLASSPATH=$CLASSPATH:/opt/mqm/java/lib/com.ibm.mq.commonservices.jar
+CLASSPATH=$CLASSPATH:/opt/mqm/java/lib/com.ibm.mq.jar
+CLASSPATH=$CLASSPATH:/opt/mqm/java/lib/com.ibm.mq.jmqi.jar
+export CLASSPATH
