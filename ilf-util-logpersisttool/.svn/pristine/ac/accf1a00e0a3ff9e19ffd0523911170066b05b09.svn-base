@@ -1,0 +1,220 @@
+package com.kvk.dp.logpersisttool;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.List;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+
+import org.apache.log4j.Logger;
+import org.custommonkey.xmlunit.exceptions.XpathException;
+
+import com.ibm.db2.jcc.am.Connection;
+import com.ibm.mq.MQException;
+import com.kvk.dp.logpersisttool.jaxb.Header;
+
+//	TODO	improve error handling
+/*	When there is a connection error to the database...the message will go in the message_retry queue
+ * 	This queue will be emptied after 30 iterations or so....a counter per message will be kept in memory
+ *  if the message with ID in the memory map has been retried for 3 times or some...it will be put in the
+ *  error_queue...this is the queue that will be monitored
+ */
+
+public class DpLogPersisterTool extends Thread implements DpLogPersistVariables {
+
+	static Logger log = Logger.getLogger(DpLogPersisterTool.class.getName());
+
+	// miliz ==> 60.000 is 1 minute
+	private static long SLEEP_TIME = 60000;
+	private int iteration_counter = 0;
+
+	private Connection conn = null;
+	private static boolean initialized = false;
+	private static DpLogPersisterTool dpc = null;
+	private static DpMQMessageTool dpMessageTool = new DpMQMessageTool();
+	
+	private String messageId;
+
+	private void init() throws ClassNotFoundException, SQLException {
+
+		log.info("Initializing DATABASE....");
+
+		if (conn != null && !conn.isClosed())
+			conn.close();
+
+		Class.forName("com.ibm.db2.jcc.DB2Driver");
+		conn = (Connection) DriverManager.getConnection(db_url, db_user, db_pwd);
+		initialized = true;
+	}
+
+	private DpMessage createDpMessage(String message) throws JAXBException,
+			UnsupportedEncodingException, XMLStreamException {
+		DpMessage dpMessage = new DpMessage();
+		XMLInputFactory xif = XMLInputFactory.newFactory();
+		InputStream xmlInputStream = new ByteArrayInputStream(
+				message.getBytes("UTF-8"));
+		XMLStreamReader xsr = xif.createXMLStreamReader(xmlInputStream);
+		xsr.nextTag(); // Advance to Envelope tag
+		xsr.nextTag(); // Advance to Header tag
+
+		JAXBContext jc = JAXBContext.newInstance(Header.class);
+		Unmarshaller unmarshaller = jc.createUnmarshaller();
+		JAXBElement<Header> je = unmarshaller.unmarshal(xsr, Header.class);
+
+		String retentionId = je.getValue().getRetentionID() == null ? "1" : je
+				.getValue().getRetentionID().trim();
+		messageId = je.getValue().getMessageID() == null ? "NO_ID" : je
+				.getValue().getMessageID().trim();
+		dpMessage.setRetentionId(retentionId);
+		dpMessage.setXmlMessageId(messageId);
+		dpMessage.setXmlMessage(message);
+
+		return dpMessage;
+	}
+
+	// TODO: Make user of Connection pool mechanism (for e.g. C3PO)
+	public void persistMessageInDatabase(String message) throws ClassNotFoundException, SQLException, XpathException,
+																			UnsupportedEncodingException, JAXBException, XMLStreamException {
+		DpMessage dpMessage = null;
+		try {
+			dpMessage = createDpMessage(message);
+		} catch (Exception e) {
+			throw new JAXBException("Exception during JAXB creation: "+ e.getMessage());
+		}
+		String query = "insert into datapower.dp_messages (message_id,message,message_type,message_date) values (?,?,?,current timestamp)";
+		if (log.isDebugEnabled()) {
+			log.debug("persisting message in db with following query : ");
+			log.debug(query);
+			log.debug(" arg 1: " + dpMessage.getXmlMessageId());
+			log.debug(" arg 2: " + dpMessage.getXmlMessage());
+			log.debug(" arg 3: " + dpMessage.getRetentionId());
+		}
+
+		if (!initialized || conn == null || (conn != null && conn.isClosed())) {
+			try {
+				init();
+			} catch (Exception ex) {
+				throw new SQLException("Exception during database initialization: "+ ex.toString());
+			}
+		}
+
+		// prepare the statement
+		PreparedStatement insertStmt = conn.prepareStatement(query);
+		insertStmt.setString(1, dpMessage.getXmlMessageId());
+		insertStmt.setString(2, dpMessage.getXmlMessage());
+		insertStmt.setString(3, dpMessage.getRetentionId());
+
+		// execute the statement
+		if (insertStmt.executeUpdate() != 1) {
+			log.info("No record inserted.");
+		}
+	}
+
+	public static void main(String[] args) {
+		dpc = new DpLogPersisterTool();
+		dpc.run();
+	}
+
+	public void run() {
+		try {
+			while (true) {
+				//	This should run every 30 minutes
+				if(iteration_counter>3){
+					dpc.iterateOverMessages(QueueType.RETRY);
+					iteration_counter = 0;
+					sleep(SLEEP_TIME);
+				}else{
+					dpc.iterateOverMessages(QueueType.NORMAL);
+					sleep(SLEEP_TIME);
+				}
+				iteration_counter++;
+			}
+		} catch (InterruptedException e) {
+			log.info(DpLogPersisterTool.class.getName()
+					+ " application interupted....");
+		} finally {
+			dpc.closeConnection();
+			dpMessageTool.closeConnection();
+		}
+	}
+
+	private void iterateOverMessages(QueueType qType) {
+		String message = null;
+		List<String> allMessagesToBeHandled = null;
+		try {
+			
+			//	Getting all the messages from the queue
+			try {
+				//	Handle the ERROR Messages --> readErrorQueue() ...or not!
+				if(qType.equals(QueueType.RETRY))
+					allMessagesToBeHandled = dpMessageTool.readErrorRetryQueue();
+				if(qType.equals(QueueType.NORMAL))
+					allMessagesToBeHandled = dpMessageTool.readQueue();
+			} catch (MQException mex) {
+				log.error("MQException getting messages from queue: "+ mex.getMessage());
+			}
+			
+			//	Iterating over the messages
+			for (int i = 0; i < allMessagesToBeHandled.size(); i++) {
+				message = allMessagesToBeHandled.get(i);
+				
+				try {
+					dpc.persistMessageInDatabase(message);
+				} catch (Exception ex) {
+					try {
+						log.error("putting message with ID: " + messageId+ " in error Retry Q, exception was: "+ ex.getMessage());
+						// 	Persist single message in queue
+						dpMessageTool.putMessageInQueue(message, QueueType.RETRY);
+					} catch (MQException mex) {
+						log.error("EXCEPTION writing to error Queue!!!!!");
+						mex.printStackTrace();
+					}
+				}
+			}
+		} catch (Exception ex) {
+			try {
+				// Persist all messages in ERROR QUEUE
+				for (int i = 0; i < allMessagesToBeHandled.size(); i++) {
+					message = allMessagesToBeHandled.get(i);
+					log.error("putting message with ID: " + messageId+ " in error Retry Q, exception was: " + ex.getMessage());
+					try {
+						dpMessageTool.putMessageInQueue(message, QueueType.RETRY);
+					} catch (MQException mex) {
+						log.error("EXCEPTION writing to error Queue!!!!!");
+						mex.printStackTrace();
+					}
+				}
+			} catch (IOException e) {
+				log.error("IOException: " + e.getMessage());
+			}
+			log.error("Exception while persisting message with messageID: "+ messageId+ " putting message in errorQueue, exception was: "+ ex.getMessage());
+		}
+	}
+
+	private void closeConnection() {
+		try {
+			if (conn != null)
+				conn.close();
+		} catch (Exception e) {
+			log.error("Exception during closing connection to db "
+					+ e.getMessage());
+		} finally {
+			try {
+				conn.close();
+				log.debug("Closing connection to db");
+			} catch (Exception e) {
+			}
+		}
+	}
+}

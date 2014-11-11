@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+  <classpathentry kind="src" path="src/test/java" output="target/test-classes" including="**/*.java"/>
+  <classpathentry kind="src" path="src/main/java" including="**/*.java"/>
+  <classpathentry kind="src" path="src/main/resources" excluding="**/*.java"/>
+  <classpathentry kind="output" path="target/classes"/>
+  <classpathentry kind="var" path="M2_REPO/javax/xml/bind/jaxb-api/2.2.5/jaxb-api-2.2.5.jar"/>
+  <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+  <classpathentry kind="var" path="M2_REPO/nl/kvk/dp/mq/jta/1.0/jta-1.0.jar"/>
+  <classpathentry kind="var" path="M2_REPO/nl/kvk/dp/mq/connector/1.0/connector-1.0.jar"/>
+  <classpathentry kind="var" path="M2_REPO/nl/kvk/dp/mq/jndi/1.0/jndi-1.0.jar"/>
+  <classpathentry kind="var" path="M2_REPO/nl/kvk/dp/mq/providerutil/1.0/providerutil-1.0.jar"/>
+  <classpathentry kind="var" path="M2_REPO/nl/kvk/dp/mq/ldap/1.0/ldap-1.0.jar"/>
+  <classpathentry kind="var" path="M2_REPO/nl/kvk/dp/mq/fscontext/1.0/fscontext-1.0.jar"/>
+  <classpathentry kind="var" path="M2_REPO/nl/kvk/dp/mq/commonservices/1.0/commonservices-1.0.jar"/>
+  <classpathentry kind="var" path="M2_REPO/nl/kvk/dp/mq/jmqi/1.0/jmqi-1.0.jar"/>
+  <classpathentry kind="var" path="M2_REPO/nl/kvk/dp/mq/mq/1.0/mq-1.0.jar"/>
+  <classpathentry kind="var" path="M2_REPO/nl/kvk/dp/db2/db2jcc/1.0/db2jcc-1.0.jar"/>
+  <classpathentry kind="var" path="M2_REPO/nl/kvk/dp/db2/db2jcc_license_cu/1.0/db2jcc_license_cu-1.0.jar"/>
+  <classpathentry kind="var" path="M2_REPO/com/sun/xml/bind/jaxb-impl/2.2.5/jaxb-impl-2.2.5.jar"/>
+  <classpathentry kind="var" path="M2_REPO/xmlunit/xmlunit/1.3/xmlunit-1.3.jar"/>
+  <classpathentry kind="var" path="M2_REPO/junit/junit/4.7/junit-4.7.jar"/>
+  <classpathentry kind="var" path="M2_REPO/org/apache/httpcomponents/httpclient/4.3.3/httpclient-4.3.3.jar"/>
+  <classpathentry kind="var" path="M2_REPO/org/apache/httpcomponents/httpcore/4.3.2/httpcore-4.3.2.jar"/>
+  <classpathentry kind="var" path="M2_REPO/commons-logging/commons-logging/1.1.3/commons-logging-1.1.3.jar"/>
+  <classpathentry kind="var" path="M2_REPO/commons-codec/commons-codec/1.6/commons-codec-1.6.jar"/>
+  <classpathentry kind="var" path="M2_REPO/log4j/log4j/1.2.16/log4j-1.2.16.jar"/>
+  <classpathentry kind="var" path="M2_REPO/xmlbeans/xmlbeans/1.0/xmlbeans-1.0.jar"/>
+</classpath>

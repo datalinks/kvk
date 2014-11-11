@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+Built-By: datapower-team
+Main-Class: com.kvk.dp.logpersisttool.DpLogPersisterTool
+Class-Path: : /kvk/lib/mqm/com.ibm.mq.commonservices.jar /kvk/lib/mqm/com.ibm.mq.jar /kvk/lib/mqm/com.ibm.mq.jmqi.jar /kvk/lib/db2/db2jcc4.jar /kvk/lib/db2/db2jcc_license_cu.jar /kvk/lib/java/commons-codec-1.4.jar /kvk/lib/java/commons-logging-1.1.1.jar /kvk/lib/java/httpclient-4.1.2.jar /kvk/lib/java/httpcore-4.1.2.jar /kvk/lib/java/jaxb-api-2.2.5.jar /kvk/lib/java/jaxb-impl-2.2.5.jar /kvk/lib/java/junit-4.7.jar /kvk/lib/java/log4j-1.2.16.jar /kvk/lib/java/xmlbeans-1.0.jar /kvk/lib/java/xmlunit-1.3.jar
+Build-Jdk: 1.7.0_45
+Created-By: Apache Maven 3.1.1
+Archiver-Version: Plexus Archiver
+

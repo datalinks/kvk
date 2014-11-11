@@ -1,0 +1,32 @@
+package com.kvk.dp.errorhandlingtool;
+
+import javax.xml.bind.JAXBException;
+
+import org.apache.log4j.Logger;
+
+public class DpErrorHandlingException extends Exception{
+
+	private static final long serialVersionUID = 1L;
+	static Logger log = Logger.getLogger(DpErrorHandlingException.class.getName());
+
+    public DpErrorHandlingException () {
+    
+    }
+
+	public DpErrorHandlingException (String message){
+		  super (message);
+	}
+
+	public DpErrorHandlingException (Throwable cause){
+		super (cause);
+	}
+
+	public DpErrorHandlingException (Throwable cause, String message){
+	    super (message, cause);
+		if(cause instanceof JAXBException){
+			log.error("JAXBException: "+message);
+		}
+
+	}
+	
+}

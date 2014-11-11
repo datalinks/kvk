@@ -1,0 +1,10 @@
+clear
+if [ $# -ne 1 ]
+  then
+    echo "Syntax is: ./start.sh [environment SBX/DEV/TST/ACP/FUN/PRD]"
+else
+   echo "logfile present in: /kvk/logs/kvk-dp-error.out " 
+   nohup java -jar errorhandling-1.0.jar $1 >/dev/null 2>&1 &
+   echo $!>$0.pid
+   tail -f /kvk/logs/kvk-dp-error.out
+fi

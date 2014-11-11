@@ -1,0 +1,158 @@
+package com.kvk.dp.logpersisttool;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.List;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+
+import org.apache.log4j.Logger;
+import org.custommonkey.xmlunit.exceptions.XpathException;
+
+import com.ibm.db2.jcc.am.Connection;
+import com.ibm.mq.MQException;
+import com.kvk.dp.logpersisttool.jaxb.Header;
+
+public class DpLogPersisterTool extends Thread{
+
+	static Logger log = Logger.getLogger(DpLogPersisterTool.class.getName());
+
+	private static long SLEEP_TIME = 60000;
+	
+	//	TODO: BAse64 encoded properties
+     private static String user 		= "db2inst1";
+     private static String pwd 			= "123qweasd";
+     private static String url 			= "jdbc:db2://localhost:50000/SAMPLE";
+     private static boolean initialized = false; 
+     private Connection conn			= null;
+
+     private void init() throws ClassNotFoundException, SQLException{
+    	 
+    	 log.info("Initializing....");
+         Class.forName("com.ibm.db2.jcc.DB2Driver");
+         conn = (Connection) DriverManager.getConnection(url, user, pwd);
+         initialized = true;
+     }
+
+
+     private DpMessage createDpMessage(String message) throws JAXBException, UnsupportedEncodingException, XMLStreamException{
+			DpMessage dpMessage = new DpMessage();
+    	 	XMLInputFactory xif = XMLInputFactory.newFactory();
+			InputStream xmlInputStream = new ByteArrayInputStream(message.getBytes("UTF-8"));
+			XMLStreamReader xsr = xif.createXMLStreamReader(xmlInputStream);
+	        xsr.nextTag(); // Advance to Envelope tag
+	        xsr.nextTag(); // Advance to Header tag
+	        
+	        JAXBContext jc = JAXBContext.newInstance(Header.class);
+	        Unmarshaller unmarshaller = jc.createUnmarshaller();
+	        JAXBElement<Header> je = unmarshaller.unmarshal(xsr, Header.class);
+	        
+	        String retentionId = je.getValue().getRetentionID() == null ? "1" : je.getValue().getRetentionID().trim();
+	        String messageId   = je.getValue().getMessageID()== null ? "NO_ID" : je.getValue().getMessageID().trim();
+	        dpMessage.setRetentionId(retentionId);
+	        dpMessage.setXmlMessageId(messageId);
+	        dpMessage.setXmlMessage(message);
+	        
+	        return dpMessage;
+     }
+     
+     public void persistMessageInDatabase(String message) throws ClassNotFoundException, SQLException, XpathException, UnsupportedEncodingException, JAXBException, XMLStreamException{
+    	 DpMessage dpMessage =  createDpMessage(message);
+    	 String query = "insert into dp_messages (message_id,message,message_type,message_date) values (?,?,?,current timestamp)";
+    	 if(log.isDebugEnabled()){
+        	 log.debug("persisting message in db with following query : ");
+        	 log.debug(query);
+        	 log.debug(" arg 1: "+dpMessage.getXmlMessageId());
+        	 log.debug(" arg 2: "+dpMessage.getXmlMessage());
+        	 log.debug(" arg 3: "+dpMessage.getRetentionId());
+    	 }
+
+    	 if(!initialized){
+    			init();
+    	 }
+
+    	 // prepare the statement
+    	 PreparedStatement insertStmt = conn.prepareStatement(query);
+    	 insertStmt.setString(1, dpMessage.getXmlMessageId()); 
+    	 insertStmt.setString(2, dpMessage.getXmlMessage());
+    	 insertStmt.setString(3, dpMessage.getRetentionId());
+
+    	 // execute the statement 
+    	 if (insertStmt.executeUpdate() != 1) {
+    		 log.info("No record inserted.");
+    	 }
+     }
+     
+     
+     public static void main(String[]args){
+    	 try {
+    		 DpLogPersisterTool dpc = new DpLogPersisterTool();
+    		while(true){
+    	    	dpc.iterateOverMessages();
+    			sleep(SLEEP_TIME);
+    		}
+		} catch (InterruptedException e) {
+			log.info(DpLogPersisterTool.class.getName()+" application interupted....");
+		}
+     }
+     
+     private void iterateOverMessages(){
+         DpLogPersisterTool dbc = new DpLogPersisterTool();
+         DpMQMessageTool mqgm 	= new DpMQMessageTool();
+         String message 		= null;
+         List<String> allMessages = null;
+         try{
+             allMessages =  mqgm.readQueue();
+            
+             for(int i=0;i<allMessages.size();i++){
+            	 message = allMessages.get(i);
+            	 dbc.persistMessageInDatabase(message);
+             }
+         }catch(MQException mqex){
+    		 log.error("Exception getting messages from MQ: "+mqex.getMessage());
+         }catch(Exception ex){
+        	 try {
+        	 	 DpMQMessageTool mqgmError 	= new DpMQMessageTool();
+        		 //	Persist in ERROR QUEUE
+                 for(int i=0;i<allMessages.size();i++){
+                	 message = allMessages.get(i);
+            		 log.error("putting message in errorQ, exception was: "+ex.getMessage());
+                	 mqgmError.putMessageInQueue(message,true);
+                	 ex.printStackTrace();
+                 }
+			} catch (MQException e) {
+	        	log.error("MQException: "+e.getMessage());
+			} catch (IOException e) {
+	        	log.error("IOException: "+e.getMessage());
+			}
+        	log.error("Exception while persisting message, putting message in errorQueue, exception was: "+ex.getMessage());
+         }finally{
+        	 dbc.closeConnection();
+         }
+    }
+     
+     
+    private void closeConnection(){
+    	try {
+            	if(conn != null)
+            		conn.close();
+        }catch (Exception e) { log.error("Exception during closing connection to db "+e.getMessage()); }
+        finally { 
+          	try { 
+          		conn.close();
+          		log.debug("Closing connection to db");
+          	} catch (Exception e) { } 
+        }
+    }  
+}

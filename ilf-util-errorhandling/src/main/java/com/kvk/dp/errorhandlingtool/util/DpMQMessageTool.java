@@ -1,0 +1,129 @@
+package com.kvk.dp.errorhandlingtool.util;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.log4j.Logger;
+
+import com.ibm.mq.MQEnvironment;
+import com.ibm.mq.MQException;
+import com.ibm.mq.MQGetMessageOptions;
+import com.ibm.mq.MQMessage;
+import com.ibm.mq.MQPutMessageOptions;
+import com.ibm.mq.MQQueue;
+import com.ibm.mq.MQQueueManager;
+import com.ibm.mq.constants.CMQC;
+import com.kvk.dp.errorhandlingtool.DpErrorHandlingVariables;
+
+public class DpMQMessageTool implements DpErrorHandlingVariables{
+
+	static Logger log = Logger.getLogger(DpMQMessageTool.class.getName());
+	
+	private static MQQueueManager qMgr;
+	private static MQQueue MQ_Queue 				= null;
+	private static MQQueue MQ_ErrorQueue 			= null;
+	private static MQQueue MQ_ErrorRetryQueue 		= null;
+
+	private int maxBatchSize					= 10;
+	public static boolean initialized 			= false;
+	private static MQPutMessageOptions pmo;
+	
+    
+	
+
+	private void init() throws MQException, IOException{
+
+		if(qMgr!=null && qMgr.isOpen())
+			closeConnection();
+			
+		MQEnvironment.hostname 	= mq_hostname;
+		MQEnvironment.channel  	= mq_channel;
+		MQEnvironment.userID 	= mq_user; 
+		MQEnvironment.port 		= mq_port;
+		qMgr = new MQQueueManager(mq_manager);
+		pmo = new MQPutMessageOptions();
+		
+		log.info("initializing DpMQMessageTool");
+		int openOptions = CMQC.MQOO_INPUT_AS_Q_DEF | CMQC.MQOO_OUTPUT | CMQC.MQOO_INQUIRE; 
+		
+		MQ_Queue = qMgr.accessQueue(mq_queuename, openOptions);
+		MQ_ErrorQueue = qMgr.accessQueue(mq_errorqueuename, openOptions);
+		MQ_ErrorRetryQueue = qMgr.accessQueue(mq_errorRetryQueuename, openOptions);
+		initialized = true;
+  }
+
+   		   
+		
+	
+	public void putMessageInQueue(String message, QueueType qType) throws MQException, IOException{
+		   if(!initialized || !MQ_Queue.isOpen() || !MQ_ErrorQueue.isOpen()){
+			   init();
+		   }
+		   MQMessage mqmessage = new MQMessage();
+		   //mqmessage.writeUTF(message);
+		   byte[] messageBytes  = message.getBytes();
+		   mqmessage.write(messageBytes);
+		   
+		   if (qType.equals(QueueType.RETRY))
+			  MQ_ErrorRetryQueue.put(mqmessage,pmo);
+		   else if(qType.equals(QueueType.ERROR))
+			   MQ_ErrorQueue.put(mqmessage,pmo);
+		   else
+			   MQ_Queue.put(mqmessage,pmo);
+	}
+
+  
+	
+  public List<String> readErrorRetryQueue() throws MQException, IOException{
+	   if(!initialized){
+		   init();
+	   }
+	   int counter = 0;
+	   log.debug("Doing ERROR RETRY Queue handling");
+	   List<String> result = new ArrayList<String>();
+	   while(MQ_ErrorRetryQueue.getCurrentDepth()>0 && counter<maxBatchSize){
+		   result.add(getMessage(MQ_ErrorRetryQueue));
+		   counter++;
+	   }
+	   return result;
+  }
+	
+  public List<String> readQueue() throws MQException, IOException{
+	   if(!initialized){
+		   init();
+	   }
+	   int counter = 0;
+	   List<String> result = new ArrayList<String>();
+	   log.debug("Doing Normal Queue handling");
+	   while(MQ_Queue.getCurrentDepth()>0 && counter<maxBatchSize){
+		   result.add(getMessage(MQ_Queue));
+		   counter++;
+	   }
+	   return result;
+  }
+
+  public void closeConnection(){
+		try{
+			MQ_Queue.close();
+			MQ_ErrorQueue.close();
+			qMgr.disconnect();
+		}catch(Exception ex){
+			log.error("Exception during close and/or disconnect queue, message is: "+ex.getMessage());
+		}
+  }
+  
+  
+	
+   private String getMessage(MQQueue mqQueue) throws IOException, MQException{
+		MQMessage retrievedMessage = new MQMessage();
+		MQGetMessageOptions gmo = new MQGetMessageOptions();
+		
+		mqQueue.get(retrievedMessage, gmo);
+		byte[] b = new byte[retrievedMessage.getMessageLength()];
+		retrievedMessage.readFully(b);
+		String result = new String(b,"UTF-8");
+		//result = result.replaceAll("[^\\x20-\\x7e]", "");
+		return result.substring(result.indexOf("<soapenv:Envelope"),result.length());
+   }
+}

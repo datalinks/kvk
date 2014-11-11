@@ -1,0 +1,401 @@
+package com.kvk.dp.errorhandlingtool;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+
+import org.apache.log4j.Logger;
+
+import com.ibm.db2.jcc.am.Connection;
+import com.ibm.mq.MQException;
+import com.kvk.dp.errorhandlingtool.jaxb.Header;
+
+/*
+This tool does the following
+* - gets the messages from the DP.ERRORHANDLING.LQ1 queue
+* - it will persist the message in the DP_ERRORMESSAGE table
+* - based on the value in the errormessage (header: kvk-dp-meta:retry-policyid) it will create 1 or more records in 
+* 		the DP.ERRORHANDLING.LQ01 table, for eg if kvk-dp-meta:retry-policyid = 1, in the DP_ERRORHANDLING_RETRYTYPES table it
+* 		says that RETRYPOLICY #1, has 3 retries with an interval of 60 seconds, if the time of enterance is 12:00 it will
+* 		enter the following data in the DP.ERRORHANDLING.LQ01 table:
+* 		ERROR_HANDLING_ID 	--> a unique nr (sequence)
+* 		MESSAGE_ID			--> The msgID from the message (reference to the DP_ERRORMESSAGE table)
+* 		RETRY_ID			--> The retry policy ID (from the kvk-dp-meta:retry-policyid) reference to the DP_ERRORHANDLING_RETRYTYPES table
+* 		RETRY_ENDPOINT		--> The url where the message should be posted (from the kvk-dp-meta:retry-endpoint)
+* 		RETRY_DATE			-->	calculated date based on the example 3 records will be made with the following times
+* 									TODAYS DATE-12:01
+* 									TODAYS DATE-12:02
+* 									TODAYS DATE-12:03
+* 		STATUS				-->	Per attempt an OK or NOT OK will be entered here, this is needed for the cleanup
+*/
+
+public class DpErrorHandlingTool extends Thread implements DpErrorHandlingVariables {
+
+	static Logger log = Logger.getLogger(DpErrorHandlingTool.class.getName());
+
+	// miliz ==> 60.000 is 1 minute
+	private static long SLEEP_TIME = 60000;
+	private int iteration_counter = 0;
+	
+
+	private Connection conn = null;
+	private static boolean initialized = false;
+
+
+	private static DpErrorHandlingTool dpc = null;
+	private static DpMQMessageTool dpMessageTool = new DpMQMessageTool();
+	private List<String> retryStatusMap = new ArrayList<String>();
+	private Map<Integer,ErrorHandlingRetryType> errorHandlingRetryTypes = new HashMap<Integer, ErrorHandlingRetryType>();
+	
+	
+	
+	private void init() throws ClassNotFoundException, SQLException {
+
+		log.info("Initializing DATABASE");
+		
+		if (conn != null && !conn.isClosed())
+			conn.close();
+
+		Class.forName("com.ibm.db2.jcc.DB2Driver");
+		conn = (Connection) DriverManager.getConnection(db_url, db_user, db_pwd);
+		
+		//	Initializing errorhandling_retrytypes
+		String query = "select retrytype_id, retry_count, retry_interval from datapower.dp_errorhandling_retrytypes";
+		PreparedStatement selectStmt = conn.prepareStatement(query);
+		ResultSet rss = selectStmt.executeQuery();
+		while(rss.next()){
+			ErrorHandlingRetryType ehrt = new ErrorHandlingRetryType();
+			ehrt.setRetrytype_id(rss.getInt("RETRYTYPE_ID"));
+			ehrt.setRetry_countr(rss.getInt("RETRY_COUNT"));
+			ehrt.setRetry_interval(rss.getInt("RETRY_INTERVAL"));
+			errorHandlingRetryTypes.put(new Integer(rss.getInt("RETRYTYPE_ID")), ehrt);
+		}
+		initialized = true;
+	}
+
+	private DpErrorMessage createDpErrorMessage(String message) throws JAXBException,UnsupportedEncodingException, XMLStreamException {
+		DpErrorMessage dpMessage = new DpErrorMessage();
+		XMLInputFactory xif = XMLInputFactory.newFactory();
+		InputStream xmlInputStream = new ByteArrayInputStream(message.getBytes("UTF-8"));
+		XMLStreamReader xsr = xif.createXMLStreamReader(xmlInputStream);
+		xsr.nextTag(); // Advance to Envelope tag
+		xsr.nextTag(); // Advance to Header tag
+
+		JAXBContext jc = JAXBContext.newInstance(Header.class);
+		Unmarshaller unmarshaller = jc.createUnmarshaller();
+		JAXBElement<Header> je = unmarshaller.unmarshal(xsr, Header.class);
+
+		log.debug("unmarshalled with header ");
+		int retryPolicyId = je.getValue().getRetryPolicyid();
+		log.debug("retryPolicy ID "+retryPolicyId);
+		String messageId = je.getValue().getMessageID() == null ? "NO_ID" : je.getValue().getMessageID().trim();
+		log.debug("message ID "+messageId);
+		String retryEndpoint = je.getValue().getRetryEndpoint() == null ? "NO_ENDPOINT" : je.getValue().getRetryEndpoint().trim(); 
+		log.debug("retryEndpoint "+retryEndpoint);
+		
+		dpMessage.setRetryPolicyId(retryPolicyId);
+		dpMessage.setRetryEndpoint(retryEndpoint);
+		dpMessage.setXmlMessageId(messageId);
+		dpMessage.setXmlMessage(message);
+
+		return dpMessage;
+	}
+
+	private void checkInit() throws SQLException{
+		if (!initialized || conn == null || (conn != null && conn.isClosed())) {
+			try {
+				init();
+			} catch (Exception ex) {
+				throw new SQLException("Exception during database initialization: "+ ex.toString());
+			}
+		}
+	}
+	
+	// TODO: Make user of Connection pool mechanism (for e.g. C3PO)
+	public void persistMessageInDatabase(DpErrorMessage dpMessage) throws ClassNotFoundException, SQLException {
+
+		checkInit();
+
+		//	Check if message already exists in DB, if so --> return
+		String query = "select message_id from datapower.dp_errormessage";
+		PreparedStatement selectStmt = conn.prepareStatement(query);
+		ResultSet rss = selectStmt.executeQuery();
+		boolean found = false;
+		while(rss.next()){
+			if(dpMessage.getXmlMessageId().equalsIgnoreCase(rss.getString("message_id")))
+				found = true;
+		}
+		if(found){
+			log.debug("message with id: "+dpMessage.getXmlMessageId()+" already found, not persisting message...");
+			return;
+		}
+
+		
+		query = "insert into datapower.dp_errormessage (message_id,message,message_date) values (?,?,current timestamp)";
+
+		if (log.isDebugEnabled()) {
+			log.debug("persisting message in db with following query : ");
+			log.debug(query);
+			log.debug(" arg 1: " + dpMessage.getXmlMessageId());
+		}
+
+		
+		// prepare the statement
+		PreparedStatement insertStmt = conn.prepareStatement(query);
+		
+		insertStmt.setString(1, dpMessage.getXmlMessageId());
+		insertStmt.setString(2, dpMessage.getXmlMessage());
+
+		// execute the statement
+		if (insertStmt.executeUpdate() != 1) {
+			log.error("No record inserted with query: "+query);
+		}
+		
+		ErrorHandlingRetryType ehrt = errorHandlingRetryTypes.get(new Integer(dpMessage.getRetryPolicyId()));
+		
+		log.debug("current retry ID: "+dpMessage.getRetryPolicyId());
+		log.debug("Resolved ErrorHandlingRetryType: ID: "+ehrt.getRetrytype_id()+" counter: "+ehrt.getRetry_countr()+" interval: "+ehrt.getRetry_interval());
+
+		
+				
+
+		Calendar cal = GregorianCalendar.getInstance();
+		
+		for(int i=0; i<ehrt.getRetry_countr(); i++){
+			int secondsToAdd = (i+1)*(ehrt.getRetry_interval());
+			
+
+			log.debug("inserting record, count = "+(i+1)+" seconds to add: "+secondsToAdd+" retrycounter = "+ehrt.getRetry_countr());
+			query = "insert into datapower.dp_errorhandling (message_id,retrytype_id,retry_endpoint,entry_date,retry_date) values (?,?,?,current timestamp,current timestamp +"+secondsToAdd+" seconds)";
+			
+			cal.add(Calendar.SECOND, secondsToAdd);
+			//Date calcDate =  new Date(cal.getTimeInMillis());
+			
+			PreparedStatement insertStmt2 = conn.prepareStatement(query);
+			
+			insertStmt2.setString(1, dpMessage.getXmlMessageId());
+			insertStmt2.setInt(2, dpMessage.getRetryPolicyId());
+			insertStmt2.setString(3, dpMessage.getRetryEndpoint());
+
+			if (insertStmt2.executeUpdate() != 1) {
+				log.error("No record inserted with query: "+query);
+			}
+
+		}
+		
+	}
+
+	public static void main(String[] args) {
+		dpc = new DpErrorHandlingTool();
+		dpc.run();
+	}
+
+	public void run() {
+		try {
+			while (true) {
+				//	Retry time is ever 3 times...(see variable file)
+				if(iteration_counter>retry_time){
+					dpc.iterateOverMessages(QueueType.RETRY);
+					iteration_counter = 0;
+					sleep(SLEEP_TIME);
+				}else{
+					//	Getting messages from queue and putting them in database
+					dpc.iterateOverMessages(QueueType.NORMAL);
+					dpc.processErrorHandlingTable();
+					dpc.cleanupErrorHandlingTable();
+					sleep(SLEEP_TIME);
+					
+				}
+				iteration_counter++;
+			}
+		} catch (InterruptedException e) {
+			log.info(DpErrorHandlingTool.class.getName()	+ " application interupted....");
+		}catch(Exception e){
+			log.error(DpErrorHandlingTool.class.getName()	+ " General exception occured, application crash....");
+			e.printStackTrace();
+		} finally {
+			dpc.cleanupErrorHandlingTable();
+			dpc.closeConnection();
+			dpMessageTool.closeConnection();
+		}
+	}
+	
+	//	TODO:	Cleanup of datapower.dp_errorhandling and datapower.dp_errormessage
+	private void cleanupErrorHandlingTable(){
+
+	}
+	
+	private void processErrorHandlingTable() throws SQLException{
+		
+		checkInit();
+		
+		String query = "select dpe.errorhandling_id,dpe.message_id,dpe.retry_endpoint,dpe.entry_date,dpe.retry_date,dpe.status,dpem.message "
+						+ "from datapower.dp_errorhandling dpe, datapower.dp_errormessage dpem where dpe.MESSAGE_ID = dpem.MESSAGE_ID";
+		PreparedStatement selectStmt = conn.prepareStatement(query);
+		ResultSet rss = selectStmt.executeQuery();
+		List<ErrorHandlingObject> errorHandlingObjects = new ArrayList<ErrorHandlingObject>();
+		
+
+		//	Initialize workload
+		while(rss.next()){
+			String status 		= rss.getString("dpe.status");
+			String messageId 	= rss.getString("dpe.message_id");
+			Date retryDate 		= rss.getDate("dpe.retry_date");
+			Date now			= new Date();
+			List<String> handledIds = new ArrayList<String>();
+			
+			if(	status==""	&&	retryDate.before(now) && !handledIds.contains(messageId)){
+				
+				ErrorHandlingObject eho = new ErrorHandlingObject();
+				handledIds.add(messageId);
+				
+				eho.setErrorhandling_id(rss.getInt("dpe.errorhandling_id"));
+				eho.setMessageId(messageId);
+				eho.setRetryEndpoint(rss.getString("dpe.retry_endpoint"));
+				eho.setEntryDate(rss.getDate("dpe.entry_date"));
+				eho.setMessage(rss.getString("dpem.message"));
+				eho.setRetryDate(retryDate);
+				eho.setStatus(status);
+				errorHandlingObjects.add(eho);
+				log.debug("will handle message with id: "+messageId+" time: "+retryDate.toString());
+			}
+		}
+
+	}
+	
+	private void iterateOverMessages(QueueType qType) {
+		String message = null;
+		DpErrorMessage dpMessage = null;
+		List<String> allMessagesToBeHandled = null;
+			
+		//	Getting messages from (M)Queue, only NORMAL and RETRY (error queue is handled manually)
+		try {
+			if(qType.equals(QueueType.NORMAL))
+				allMessagesToBeHandled = dpMessageTool.readQueue();
+			if(qType.equals(QueueType.RETRY))
+				allMessagesToBeHandled = dpMessageTool.readErrorRetryQueue();
+		} catch (MQException mex) {
+			log.error("MQException getting messages from queue: "+ mex.getMessage()+" messagetype is: "+qType.toString());
+		} catch (IOException e) {
+			log.error("IO Exception : + getting message from Queue, msg: "+e.getMessage() );
+		}
+			
+
+		try {
+
+			//	Iterating over the messages, creating dpMessage and persisting them in DB
+			for (int i = 0; i < allMessagesToBeHandled.size(); i++) {
+				message = allMessagesToBeHandled.get(i);
+				try {
+					log.debug("create error message... ");
+					dpMessage = createDpErrorMessage(message);
+					log.debug("persist error message... ");
+					dpc.persistMessageInDatabase(dpMessage);
+				} catch (JAXBException exception) {
+					//	Will write to ERROR QUEUE eventually, cannot do anything with this message :(
+					log.error("JAXBException during createErrorMessage or persistMessageInDatabase, writing message to ERROR Q");
+					writeAllMessagesInQueue(allMessagesToBeHandled,QueueType.ERROR,dpMessage.getXmlMessageId());
+				}catch (UnsupportedEncodingException exception){
+					log.error("UnsupportedEncodingException during createErrorMessage or persistMessageInDatabase, writing message to ERROR Q");
+					writeAllMessagesInQueue(allMessagesToBeHandled,QueueType.ERROR,dpMessage.getXmlMessageId());
+				} catch (XMLStreamException exception) {
+					log.error("XMLStreamException during createErrorMessage or persistMessageInDatabase, writing message to ERROR Q");
+					writeAllMessagesInQueue(allMessagesToBeHandled,QueueType.ERROR,dpMessage.getXmlMessageId());
+				}
+			}
+		} catch (SQLException ex) {
+			try{
+				retryStatusMap.add(new String(dpMessage.getXmlMessageId()));
+				int occurrences = Collections.frequency(retryStatusMap, dpMessage.getXmlMessageId());
+				log.debug(dpMessage.getXmlMessageId()+" occurs: "+occurrences+" times in retryStatusMap");
+				
+				if(occurrences>=max_retry_times){
+					Iterator<String> iterator = retryStatusMap.iterator();
+					log.error("putting message with ID: " + dpMessage.getXmlMessageId()+ " in ERROR Q, exception was: "+ ex.getMessage());
+					
+					writeAllMessagesInQueue(allMessagesToBeHandled,QueueType.ERROR,dpMessage.getXmlMessageId());
+					//	Cleanup
+					while(iterator.hasNext()){
+						if(iterator.next() == dpMessage.getXmlMessageId())
+							retryStatusMap.remove(dpMessage.getXmlMessageId());
+					}
+				}else{
+					log.error("putting message with ID: " + dpMessage.getXmlMessageId()+ " in error Retry Q, exception was: "+ ex.getMessage());
+					writeAllMessagesInQueue(allMessagesToBeHandled,QueueType.RETRY,dpMessage.getXmlMessageId());
+				}
+			} catch (MQException e) {
+				log.error("MQ Exception : + writing message to Queue for message with id "+dpMessage.getXmlMessageId()+" msg: "+e.getMessage() );
+			} catch (IOException e) {
+				log.error("IO Exception : + writing message to Queue for message with id "+dpMessage.getXmlMessageId()+" msg: "+e.getMessage() );
+			} catch (JAXBException e) {
+				log.error("JAXB Exception : "+ e.getMessage() );
+			} catch (XMLStreamException e) {
+				log.error("XMLStreamException Exception : "+ e.getMessage() );
+			}
+		}catch(Exception ex){
+			log.error("No SQL exception for : " + dpMessage.getXmlMessageId()+ " wrong message? putting in ERROR Q, exception was: "+ ex.getMessage());
+			try{
+				writeAllMessagesInQueue(allMessagesToBeHandled,QueueType.ERROR,dpMessage.getXmlMessageId());
+			} catch (MQException e) {
+				log.error("MQ Exception : + writing message to ERROR Queue for message with id "+dpMessage.getXmlMessageId()+" msg: "+e.getMessage() );
+			} catch (IOException e) {
+				log.error("IO Exception : + writing message to ERROR Queue for message with id "+dpMessage.getXmlMessageId()+" msg: "+e.getMessage() );
+			} catch (JAXBException e) {
+				log.error("JAXB Exception : "+ e.getMessage() );
+			} catch (XMLStreamException e) {
+				log.error("XMLStreamException Exception : "+ e.getMessage() );
+			}
+		}
+		
+	}
+
+	private void writeAllMessagesInQueue(List<String> messagesToBeHandled , QueueType qtype, String msgIdWithProblem) throws MQException, IOException, JAXBException, XMLStreamException{
+		
+		for (int i = 0; i < messagesToBeHandled.size(); i++) {
+			String message = messagesToBeHandled.get(i);
+			DpErrorMessage dpMessage = createDpErrorMessage(message);
+			if(dpMessage.getXmlMessageId().equalsIgnoreCase(msgIdWithProblem))
+				dpMessageTool.putMessageInQueue(message, qtype);
+			else
+				dpMessageTool.putMessageInQueue(message, QueueType.NORMAL);
+		}
+	}
+	
+	private void closeConnection() {
+		try {
+			if (conn != null)
+				conn.close();
+		} catch (Exception e) {
+			log.error("Exception during closing connection to db "
+					+ e.getMessage());
+		} finally {
+			try {
+				conn.close();
+				log.debug("Closing connection to db");
+			} catch (Exception e) {
+			}
+		}
+	}
+}

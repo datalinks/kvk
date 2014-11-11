@@ -1,0 +1,127 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.kvk.dp</groupId>
+	<artifactId>ilf-util-errorhandling</artifactId>
+	<version>1.0</version>
+	<packaging>jar</packaging>
+
+	<name>ilf-util-errorhandling</name>
+	<url>http://infoplein.k94.kvk.nl/display/ictmi/Integratielaag+Framework+v.+4.0</url>
+
+  <build>
+    <plugins>
+	<plugin>
+ 		<groupId>org.apache.maven.plugins</groupId>
+		<artifactId>maven-jar-plugin</artifactId>
+		<configuration>
+			<archive>
+				<manifestFile>src/main/resources/MANIFEST.MF</manifestFile>
+			</archive>
+		</configuration>
+	</plugin>
+</plugins>
+	</build>
+	<dependencies>
+		<dependency>
+			<groupId>nl.kvk.dp.mq</groupId>
+			<artifactId>jta</artifactId>
+			<version>1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>nl.kvk.dp.mq</groupId>
+			<artifactId>connector</artifactId>
+			<version>1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>nl.kvk.dp.mq</groupId>
+			<artifactId>jndi</artifactId>
+			<version>1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>nl.kvk.dp.mq</groupId>
+			<artifactId>providerutil</artifactId>
+			<version>1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>nl.kvk.dp.mq</groupId>
+			<artifactId>ldap</artifactId>
+			<version>1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>nl.kvk.dp.mq</groupId>
+			<artifactId>fscontext</artifactId>
+			<version>1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>nl.kvk.dp.mq</groupId>
+			<artifactId>commonservices</artifactId>
+			<version>1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>nl.kvk.dp.mq</groupId>
+			<artifactId>jmqi</artifactId>
+			<version>1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>nl.kvk.dp.mq</groupId>
+			<artifactId>mq</artifactId>
+			<version>1.0</version>
+		</dependency>
+
+
+
+		<dependency>
+			<groupId>nl.kvk.dp.db2</groupId>
+			<artifactId>db2jcc</artifactId>
+			<version>1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>nl.kvk.dp.db2</groupId>
+			<artifactId>db2jcc_license_cu</artifactId>
+			<version>1.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>javax.xml.bind</groupId>
+			<artifactId>jaxb-api</artifactId>
+			<version>2.2.5</version>
+		</dependency>
+		<dependency>
+			<groupId>com.sun.xml.bind</groupId>
+			<artifactId>jaxb-impl</artifactId>
+			<version>2.2.5</version>
+		</dependency>
+
+		<dependency>
+			<groupId>xmlunit</groupId>
+			<artifactId>xmlunit</artifactId>
+			<version>1.3</version>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.7</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>4.3.3</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.16</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>xmlbeans</groupId>
+			<artifactId>xmlbeans</artifactId>
+			<version>1.0</version>
+		</dependency>
+	</dependencies>
+
+</project>

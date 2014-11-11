@@ -1,0 +1,2 @@
+insert into dp_messages values ('1','<XML>HELLO</XML>',2,current timestamp)
+

@@ -1,0 +1,12 @@
+# This file should be in /opt/kvk/errorhandling/properties
+db_user=ZGJ4Y3Z1Cg==
+db_pwd=enc0cnQzcDNuCg==
+db_url=amRiYzpkYjI6Ly9SUzk0QVNPRi5rOTQua3ZrLm5sOjYwNTA0L2RieGN2dQo=
+mq_queuename=RFAuRVJST1JIQU5ETElORy5MUTAxCg==
+mq_errorRetryQueuename=RFAuRVJST1JIQU5ETElOR19SRVRSWS5MUTAxCg==
+mq_errorqueuename=RFAuRVJST1JIQU5ETElOR19FUlJPUi5MUTAxCg==
+mq_hostname=cnM5NGFzbzcuazk0Lmt2ay5ubAo=
+mq_channel=REFUQVBPV0VSLlNWUkNPTk4K
+mq_user=ZGJ4Y3Z1Cg==
+mq_port=MTA0MjUK
+mq_manager=TVFNTUkwNgo=
