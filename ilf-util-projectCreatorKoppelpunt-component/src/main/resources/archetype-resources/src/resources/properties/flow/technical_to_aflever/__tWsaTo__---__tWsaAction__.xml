@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+	<mappings>
+		<mapping>
+			<endPointName>${afleverEndPointName}</endPointName>
+		</mapping>
+	</mappings>	
+	<logging>true</logging>
+	<logging-level>debug</logging-level>
+        <persist-message>true</persist-message>
+        <slm-policy-name></slm-policy-name>
+</config>

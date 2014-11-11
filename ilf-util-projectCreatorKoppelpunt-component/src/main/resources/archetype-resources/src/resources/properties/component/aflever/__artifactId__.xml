@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kvk:ilf xmlns:kvk="http://www.kvk.nl/dp" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.kvk.nl/dp component_property.xsd ">
+  <meta-info>
+    <version>1.0</version>
+    <notes></notes>
+  </meta-info>
+  <properties>
+    <frontSideHandlerUri></frontSideHandlerUri>
+    <endPointUri></endPointUri>
+  </properties>
+</kvk:ilf>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<archetype-descriptor name="ilf">
+
+  <fileSets>
+    <fileSet filtered="true" encoding="UTF-8"><directory>src/resources/documentation</directory></fileSet>
+    <fileSet filtered="true" encoding="UTF-8"><directory>src/resources/soapui</directory></fileSet>
+    <fileSet filtered="true" encoding="UTF-8"><directory>src/resources/export</directory></fileSet>
+    <fileSet filtered="true" encoding="UTF-8"><directory>src/resources/messages</directory></fileSet>
+    <fileSet filtered="true" encoding="UTF-8"><directory>src/resources/wsdl</directory></fileSet>
+    <fileSet filtered="true" encoding="UTF-8"><directory>src/resources/xml</directory></fileSet>
+    <fileSet filtered="true" encoding="UTF-8"><directory>src/resources/properties/flow/functional_to_technical</directory></fileSet>
+    <fileSet filtered="true" encoding="UTF-8"><directory>src/resources/properties/flow/technical_to_aflever</directory></fileSet>
+  </fileSets>
+
+    <requiredProperties>
+        <requiredProperty key="groupId"/>
+        <requiredProperty key="artifactId"/>
+        <requiredProperty key="version"/>
+        <requiredProperty key="projectName"/>
+	<requiredProperty key="fWsaTo"/>
+	<requiredProperty key="fWsaAction"/>
+	<requiredProperty key="tWsaTo"/>
+	<requiredProperty key="tWsaAction"/>
+	<requiredProperty key="expectedVersion"/>
+	<requiredProperty key="afleverEndPointName"/>
+	<requiredProperty key="archetypeGroupId"/>
+	<requiredProperty key="archetypeArtifactId"/>
+	<requiredProperty key="archetypeVersion"/>
+    </requiredProperties>
+
+
+
+</archetype-descriptor>
