@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- versie 1.0 -->
+<properties>
+	<chris-domain>
+		<debug>on</debug>
+		<eventLogIndicator>off</eventLogIndicator>
+		<eventLogEndpoint>dpmq://MQMAS-GRP01-ILF/?RequestQueue=IL.TO.LOGGING.LQ01</eventLogEndpoint>
+		<berichtLogIndicator>off</berichtLogIndicator>
+		<berichtLogEndpoint>dpmq://MQMAS-GRP01-ILF/?RequestQueue=IL.TO.LOGGING.LQ01</berichtLogEndpoint>
+		<endPointUri>http://dpd-snb01-02.k94.kvk.nl:28100</endPointUri>
+		<endPointService/>
+		<routePointUri>http://dpd-dev01-01.k94.kvk.nl:20000</routePointUri>
+		<routePointService/>
+	</chris-domain>
+</properties>
